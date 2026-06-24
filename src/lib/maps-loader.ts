@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 // Async Google Maps loader (browser only)
 let loadPromise: Promise<typeof google> | null = null;
 

@@ -10,10 +10,12 @@ const stkInputSchema = z.object({
   amount: z.number().int().positive().max(150000),
 });
 
-const env = "sandbox"; // change to "production" when going live
-
+const MPESA_ENV: "sandbox" | "production" =
+  (process.env.MPESA_ENV as "sandbox" | "production") || "sandbox";
 const HOST =
-  env === "production" ? "https://api.safaricom.co.ke" : "https://sandbox.safaricom.co.ke";
+  MPESA_ENV === "production"
+    ? "https://api.safaricom.co.ke"
+    : "https://sandbox.safaricom.co.ke";
 
 function normalizePhone(input: string): string {
   const digits = input.replace(/\D+/g, "");

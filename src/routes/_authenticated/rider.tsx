@@ -11,7 +11,7 @@ import { StatusPill } from "@/routes/_authenticated/dashboard";
 
 export const Route = createFileRoute("/_authenticated/rider")({
   head: () => ({ meta: [{ title: "Rider portal · Urban Courier" }] }),
-  component: RiderPortal;
+  component: RiderPortal,
 });
 
 type Order = {

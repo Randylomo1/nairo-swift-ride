@@ -79,7 +79,7 @@ function RiderPortal() {
   }
 
   async function updateStatus(orderId: string, status: string) {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+    const { error } = await supabase.from("orders").update({ status: status as Order["status"] }).eq("id", orderId);
     if (error) return toast.error(error.message);
     toast.success("Status updated");
     load();

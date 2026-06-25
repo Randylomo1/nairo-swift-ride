@@ -27,9 +27,12 @@ export function SiteHeader() {
         </nav>
         <div className="flex items-center gap-2">
           {user ? (
-            <Link to="/dashboard">
-              <Button className="btn-navy h-9 px-4">Dashboard</Button>
-            </Link>
+            <>
+              <Link to="/admin" className="hidden sm:inline text-sm font-medium text-muted-foreground hover:text-foreground">Admin</Link>
+              <Link to="/dashboard">
+                <Button className="btn-navy h-9 px-4">Dashboard</Button>
+              </Link>
+            </>
           ) : (
             <>
               <Link to="/auth">

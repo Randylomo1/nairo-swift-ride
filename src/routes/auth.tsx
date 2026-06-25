@@ -98,7 +98,10 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard" });
+    const { data: u } = await supabase.auth.getUser();
+    if (u.user) await routeByRole(u.user.id);
+    else navigate({ to: "/dashboard" });
+
   }
 
   return (

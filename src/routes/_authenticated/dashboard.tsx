@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ type Profile = {
 };
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,9 +42,16 @@ function Dashboard() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
+      // Route role holders to their portal
+      const { data: rolesData } = await supabase
+        .from("user_roles").select("role").eq("user_id", u.user.id);
+      const roles = ((rolesData ?? []) as { role: string }[]).map((r) => r.role);
+      if (roles.includes("admin")) { navigate({ to: "/admin" }); return; }
+      if (roles.includes("rider")) { navigate({ to: "/rider" }); return; }
+
       const [p, o] = await Promise.all([
         supabase.from("profiles").select("full_name, referral_code, credits_kes").eq("id", u.user.id).maybeSingle(),
-        supabase.from("orders").select("id, order_number, status, pickup_address, dropoff_address, fare_kes, created_at, payment_status").order("created_at", { ascending: false }).limit(20),
+        supabase.from("orders").select("id, order_number, status, pickup_address, dropoff_address, fare_kes, created_at, payment_status").eq("customer_id", u.user.id).order("created_at", { ascending: false }).limit(20),
       ]);
       if (!mounted) return;
       setProfile(p.data as Profile | null);
@@ -50,7 +59,8 @@ function Dashboard() {
       setLoading(false);
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [navigate]);
+
 
   const active = orders.filter((o) => !["delivered", "cancelled"].includes(o.status));
   const completed = orders.filter((o) => o.status === "delivered");

@@ -31,11 +31,21 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  async function routeByRole(userId: string) {
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const roles = ((data ?? []) as { role: string }[]).map((r) => r.role);
+    if (roles.includes("admin")) return navigate({ to: "/admin" });
+    if (roles.includes("rider")) return navigate({ to: "/rider" });
+    return navigate({ to: "/dashboard" });
+  }
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/dashboard" });
+      if (data.user) routeByRole(data.user.id);
     });
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,7 +76,10 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/dashboard" });
+      const { data: u } = await supabase.auth.getUser();
+      if (u.user) await routeByRole(u.user.id);
+      else navigate({ to: "/dashboard" });
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -85,7 +98,10 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard" });
+    const { data: u } = await supabase.auth.getUser();
+    if (u.user) await routeByRole(u.user.id);
+    else navigate({ to: "/dashboard" });
+
   }
 
   return (

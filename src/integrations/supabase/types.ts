@@ -385,7 +385,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      riders_public: {
+        Row: {
+          approved: boolean | null
+          current_lat: number | null
+          current_lng: number | null
+          full_name: string | null
+          id: string | null
+          online: boolean | null
+          rating: number | null
+          total_deliveries: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       claim_first_admin: { Args: never; Returns: boolean }

@@ -18,6 +18,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBookRouteImport } from './routes/_authenticated/book'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedTrackOrderIdRouteImport } from './routes/_authenticated/track.$orderId'
+import { Route as AuthenticatedPaymentOrderIdRouteImport } from './routes/_authenticated/payment.$orderId'
 import { Route as ApiPublicMpesaCallbackRouteImport } from './routes/api/public/mpesa/callback'
 
 const BecomeRiderRoute = BecomeRiderRouteImport.update({
@@ -65,6 +66,12 @@ const AuthenticatedTrackOrderIdRoute =
     path: '/track/$orderId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPaymentOrderIdRoute =
+  AuthenticatedPaymentOrderIdRouteImport.update({
+    id: '/payment/$orderId',
+    path: '/payment/$orderId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicMpesaCallbackRoute = ApiPublicMpesaCallbackRouteImport.update({
   id: '/api/public/mpesa/callback',
   path: '/api/public/mpesa/callback',
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/book': typeof AuthenticatedBookRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/rider': typeof AuthenticatedRiderRoute
+  '/payment/$orderId': typeof AuthenticatedPaymentOrderIdRoute
   '/track/$orderId': typeof AuthenticatedTrackOrderIdRoute
   '/api/public/mpesa/callback': typeof ApiPublicMpesaCallbackRoute
 }
@@ -90,6 +98,7 @@ export interface FileRoutesByTo {
   '/book': typeof AuthenticatedBookRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/rider': typeof AuthenticatedRiderRoute
+  '/payment/$orderId': typeof AuthenticatedPaymentOrderIdRoute
   '/track/$orderId': typeof AuthenticatedTrackOrderIdRoute
   '/api/public/mpesa/callback': typeof ApiPublicMpesaCallbackRoute
 }
@@ -103,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/book': typeof AuthenticatedBookRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/rider': typeof AuthenticatedRiderRoute
+  '/_authenticated/payment/$orderId': typeof AuthenticatedPaymentOrderIdRoute
   '/_authenticated/track/$orderId': typeof AuthenticatedTrackOrderIdRoute
   '/api/public/mpesa/callback': typeof ApiPublicMpesaCallbackRoute
 }
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/book'
     | '/dashboard'
     | '/rider'
+    | '/payment/$orderId'
     | '/track/$orderId'
     | '/api/public/mpesa/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/book'
     | '/dashboard'
     | '/rider'
+    | '/payment/$orderId'
     | '/track/$orderId'
     | '/api/public/mpesa/callback'
   id:
@@ -139,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/book'
     | '/_authenticated/dashboard'
     | '/_authenticated/rider'
+    | '/_authenticated/payment/$orderId'
     | '/_authenticated/track/$orderId'
     | '/api/public/mpesa/callback'
   fileRoutesById: FileRoutesById
@@ -216,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrackOrderIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/payment/$orderId': {
+      id: '/_authenticated/payment/$orderId'
+      path: '/payment/$orderId'
+      fullPath: '/payment/$orderId'
+      preLoaderRoute: typeof AuthenticatedPaymentOrderIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/mpesa/callback': {
       id: '/api/public/mpesa/callback'
       path: '/api/public/mpesa/callback'
@@ -231,6 +251,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBookRoute: typeof AuthenticatedBookRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedRiderRoute: typeof AuthenticatedRiderRoute
+  AuthenticatedPaymentOrderIdRoute: typeof AuthenticatedPaymentOrderIdRoute
   AuthenticatedTrackOrderIdRoute: typeof AuthenticatedTrackOrderIdRoute
 }
 
@@ -239,6 +260,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBookRoute: AuthenticatedBookRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedRiderRoute: AuthenticatedRiderRoute,
+  AuthenticatedPaymentOrderIdRoute: AuthenticatedPaymentOrderIdRoute,
   AuthenticatedTrackOrderIdRoute: AuthenticatedTrackOrderIdRoute,
 }
 

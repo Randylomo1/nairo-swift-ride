@@ -99,11 +99,17 @@ function BookDelivery() {
         .single();
       if (error || !order) throw error ?? new Error("Failed to create order");
 
-      const res = await stkPush({
-        data: { orderId: order.id, phone: payPhone, amount: fare.total },
-      });
-      toast.success(res.message ?? "STK push sent. Approve on your phone.");
-      navigate({ to: "/track/$orderId", params: { orderId: order.id } });
+      if (payPhone && payPhone.replace(/\D+/g, "").length >= 9) {
+        try {
+          const res = await stkPush({
+            data: { orderId: order.id, phone: payPhone, amount: fare.total },
+          });
+          toast.success(res.message ?? "STK push sent. Approve on your phone.");
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "STK push failed — pay from the payment page");
+        }
+      }
+      navigate({ to: "/payment/$orderId", params: { orderId: order.id } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Booking failed");
     } finally {

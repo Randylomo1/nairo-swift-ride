@@ -126,30 +126,36 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function OrderList({ orders }: { orders: OrderRow[] }) {
   return (
     <div className="card-surface divide-y divide-border overflow-hidden">
-      {orders.map((o) => (
-        <Link
-          key={o.id}
-          to="/track/$orderId"
-          params={{ orderId: o.id }}
-          className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-secondary/60 transition"
-        >
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="font-mono">{o.order_number}</span>
-              <StatusPill status={o.status} />
-            </div>
-            <div className="mt-1 text-sm font-medium truncate">
-              {o.pickup_address} → {o.dropoff_address}
+      {orders.map((o) => {
+        const unpaid = o.payment_status !== "success" && o.status !== "cancelled";
+        return (
+          <div key={o.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-secondary/60 transition">
+            <Link to="/track/$orderId" params={{ orderId: o.id }} className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-mono">{o.order_number}</span>
+                <StatusPill status={o.status} />
+                {unpaid && <span className="rounded-full bg-warning/30 text-navy px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">Unpaid</span>}
+              </div>
+              <div className="mt-1 text-sm font-medium truncate">
+                {o.pickup_address} → {o.dropoff_address}
+              </div>
+            </Link>
+            <div className="text-right shrink-0 flex items-center gap-3">
+              <div>
+                <div className="font-display font-bold text-navy">{formatKES(o.fare_kes)}</div>
+                <div className="text-xs text-muted-foreground inline-flex items-center gap-1 justify-end">
+                  View <ArrowRight className="size-3" />
+                </div>
+              </div>
+              {unpaid && (
+                <Link to="/payment/$orderId" params={{ orderId: o.id }}>
+                  <Button size="sm" className="btn-emerald">Pay now</Button>
+                </Link>
+              )}
             </div>
           </div>
-          <div className="text-right shrink-0">
-            <div className="font-display font-bold text-navy">{formatKES(o.fare_kes)}</div>
-            <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-              View <ArrowRight className="size-3" />
-            </div>
-          </div>
-        </Link>
-      ))}
+        );
+      })}
     </div>
   );
 }

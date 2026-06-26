@@ -88,6 +88,32 @@ function Dashboard() {
           <StatCard icon={Users} label="Referral code" value={profile?.referral_code ?? "—"} />
         </div>
 
+        {(() => {
+          const pendingPay = orders.filter((o) => o.payment_status !== "success" && o.status !== "cancelled");
+          if (pendingPay.length === 0) return null;
+          const total = pendingPay.reduce((s, o) => s + Number(o.fare_kes), 0);
+          return (
+            <section className="mt-8 card-surface p-5 border-l-4 border-emerald">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-display font-semibold text-navy">Pending payments</h2>
+                  <p className="text-sm text-muted-foreground">{pendingPay.length} order{pendingPay.length>1?"s":""} · {formatKES(total)} due</p>
+                </div>
+                <Link to="/payment"><Button className="btn-emerald h-10">View all payments</Button></Link>
+              </div>
+              <div className="mt-4 space-y-2">
+                {pendingPay.slice(0,3).map((o) => (
+                  <div key={o.id} className="flex items-center justify-between gap-3 text-sm">
+                    <div className="min-w-0 flex-1 truncate"><span className="font-mono text-xs text-muted-foreground mr-2">{o.order_number}</span>{o.pickup_address} → {o.dropoff_address}</div>
+                    <div className="font-display font-bold text-navy">{formatKES(o.fare_kes)}</div>
+                    <Link to="/payment/$orderId" params={{ orderId: o.id }}><Button size="sm" className="btn-emerald">Pay now</Button></Link>
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
+
         <Section title="Active deliveries">
           {loading ? <Skeleton /> : active.length === 0 ? <Empty msg="No active deliveries. Book one to get started." /> : <OrderList orders={active} />}
         </Section>

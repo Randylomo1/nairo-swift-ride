@@ -39,9 +39,10 @@ function AdminPanel() {
 
   async function checkAdmin() {
     const { data: u } = await supabase.auth.getUser();
-    if (!u.user) { setChecking(false); return; }
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
-    setIsAdmin(!!data);
+    if (!u.user) { setIsAdmin(false); setChecking(false); return; }
+    const { data, error } = await supabase.rpc("has_role", { _user_id: u.user.id, _role: "admin" });
+    if (error) { setIsAdmin(false); setChecking(false); return; }
+    setIsAdmin(data === true);
     setChecking(false);
   }
 

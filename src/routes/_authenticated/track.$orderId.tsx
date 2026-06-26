@@ -100,6 +100,17 @@ function TrackOrder() {
         <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" /> Back to dashboard
         </Link>
+        {order.payment_status !== "success" && order.status !== "cancelled" && (
+          <div className="mt-4 card-surface p-4 border-l-4 border-emerald flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="font-display font-semibold text-navy">Payment required</div>
+              <div className="text-sm text-muted-foreground">Complete M-Pesa payment to dispatch a rider.</div>
+            </div>
+            <Link to="/payment/$orderId" params={{ orderId: order.id }}>
+              <button className="btn-emerald h-10 px-4 rounded-md text-sm font-semibold">Continue to payment</button>
+            </Link>
+          </div>
+        )}
         <div className="mt-4 grid lg:grid-cols-[1.3fr_1fr] gap-6">
           <div className="card-surface overflow-hidden h-[420px] lg:h-[620px] relative">
             <DeliveryMap

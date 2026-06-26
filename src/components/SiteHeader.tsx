@@ -18,9 +18,16 @@ export function SiteHeader() {
       <div className="container-page flex h-16 items-center justify-between">
         <Logo />
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-          <Link to="/" hash="how" className="hover:text-foreground">How it works</Link>
-          <Link to="/" hash="coverage" className="hover:text-foreground">Coverage</Link>
-          {!isRider && !isAdmin && (
+          {!signedIn && <Link to="/" hash="how" className="hover:text-foreground">How it works</Link>}
+          {!signedIn && <Link to="/" hash="coverage" className="hover:text-foreground">Coverage</Link>}
+          {signedIn && !isRider && !isAdmin && (
+            <>
+              <Link to="/dashboard" className="hover:text-foreground">Dashboard</Link>
+              <Link to="/book" className="hover:text-foreground">Book</Link>
+              <Link to="/payment" className="hover:text-foreground">Payments</Link>
+            </>
+          )}
+          {!isRider && !isAdmin && !signedIn && (
             <Link to="/become-rider" className="hover:text-foreground">Become a Rider</Link>
           )}
           {signedIn && isRider && (

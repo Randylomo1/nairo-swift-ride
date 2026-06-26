@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 
 export function SiteFooter() {
@@ -16,10 +17,11 @@ export function SiteFooter() {
           <li>Same-day delivery</li>
           <li>Scheduled deliveries</li>
         </FooterCol>
-        <FooterCol title="Company">
-          <li>About us</li>
-          <li>Contact</li>
-          <li>Become a rider</li>
+        <FooterCol title="Customer">
+          <li><Link to="/book" className="hover:text-foreground">Book delivery</Link></li>
+          <li><Link to="/dashboard" className="hover:text-foreground">Track orders</Link></li>
+          <li><Link to="/payment" className="hover:text-foreground">Payments</Link></li>
+          <li><Link to="/become-rider" className="hover:text-foreground">Become a rider</Link></li>
         </FooterCol>
         <FooterCol title="Legal">
           <li>Terms of service</li>

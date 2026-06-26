@@ -88,6 +88,32 @@ function Dashboard() {
           <StatCard icon={Users} label="Referral code" value={profile?.referral_code ?? "—"} />
         </div>
 
+        {(() => {
+          const pendingPay = orders.filter((o) => o.payment_status !== "success" && o.status !== "cancelled");
+          if (pendingPay.length === 0) return null;
+          const total = pendingPay.reduce((s, o) => s + Number(o.fare_kes), 0);
+          return (
+            <section className="mt-8 card-surface p-5 border-l-4 border-emerald">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-display font-semibold text-navy">Pending payments</h2>
+                  <p className="text-sm text-muted-foreground">{pendingPay.length} order{pendingPay.length>1?"s":""} · {formatKES(total)} due</p>
+                </div>
+                <Link to="/payment"><Button className="btn-emerald h-10">View all payments</Button></Link>
+              </div>
+              <div className="mt-4 space-y-2">
+                {pendingPay.slice(0,3).map((o) => (
+                  <div key={o.id} className="flex items-center justify-between gap-3 text-sm">
+                    <div className="min-w-0 flex-1 truncate"><span className="font-mono text-xs text-muted-foreground mr-2">{o.order_number}</span>{o.pickup_address} → {o.dropoff_address}</div>
+                    <div className="font-display font-bold text-navy">{formatKES(o.fare_kes)}</div>
+                    <Link to="/payment/$orderId" params={{ orderId: o.id }}><Button size="sm" className="btn-emerald">Pay now</Button></Link>
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
+
         <Section title="Active deliveries">
           {loading ? <Skeleton /> : active.length === 0 ? <Empty msg="No active deliveries. Book one to get started." /> : <OrderList orders={active} />}
         </Section>
@@ -126,30 +152,36 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function OrderList({ orders }: { orders: OrderRow[] }) {
   return (
     <div className="card-surface divide-y divide-border overflow-hidden">
-      {orders.map((o) => (
-        <Link
-          key={o.id}
-          to="/track/$orderId"
-          params={{ orderId: o.id }}
-          className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-secondary/60 transition"
-        >
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="font-mono">{o.order_number}</span>
-              <StatusPill status={o.status} />
-            </div>
-            <div className="mt-1 text-sm font-medium truncate">
-              {o.pickup_address} → {o.dropoff_address}
+      {orders.map((o) => {
+        const unpaid = o.payment_status !== "success" && o.status !== "cancelled";
+        return (
+          <div key={o.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-secondary/60 transition">
+            <Link to="/track/$orderId" params={{ orderId: o.id }} className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-mono">{o.order_number}</span>
+                <StatusPill status={o.status} />
+                {unpaid && <span className="rounded-full bg-warning/30 text-navy px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">Unpaid</span>}
+              </div>
+              <div className="mt-1 text-sm font-medium truncate">
+                {o.pickup_address} → {o.dropoff_address}
+              </div>
+            </Link>
+            <div className="text-right shrink-0 flex items-center gap-3">
+              <div>
+                <div className="font-display font-bold text-navy">{formatKES(o.fare_kes)}</div>
+                <div className="text-xs text-muted-foreground inline-flex items-center gap-1 justify-end">
+                  View <ArrowRight className="size-3" />
+                </div>
+              </div>
+              {unpaid && (
+                <Link to="/payment/$orderId" params={{ orderId: o.id }}>
+                  <Button size="sm" className="btn-emerald">Pay now</Button>
+                </Link>
+              )}
             </div>
           </div>
-          <div className="text-right shrink-0">
-            <div className="font-display font-bold text-navy">{formatKES(o.fare_kes)}</div>
-            <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-              View <ArrowRight className="size-3" />
-            </div>
-          </div>
-        </Link>
-      ))}
+        );
+      })}
     </div>
   );
 }

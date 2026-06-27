@@ -149,7 +149,7 @@ function BookDelivery() {
 
             {step === 1 && (
               <div className="mt-5 space-y-4">
-                <Hint>Tap the map to pin pickup, then dropoff (toggle the buttons on top of the map).</Hint>
+                <Hint>Tap "Set pickup", drag the map so the pin sits on your spot, then Confirm. Repeat for dropoff. You can also search or use your current location.</Hint>
                 <PinRow label="Pickup" pin={pickup} accent="navy" />
                 <PinRow label="Dropoff" pin={dropoff} accent="emerald" />
                 <Button

@@ -20,6 +20,7 @@ export function SiteHeader() {
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
           {!signedIn && <Link to="/" hash="how" className="hover:text-foreground">How it works</Link>}
           {!signedIn && <Link to="/" hash="coverage" className="hover:text-foreground">Coverage</Link>}
+          {!signedIn && <Link to="/pricing" className="hover:text-foreground">Pricing</Link>}
           {signedIn && !isRider && !isAdmin && (
             <>
               <Link to="/dashboard" className="hover:text-foreground">Dashboard</Link>

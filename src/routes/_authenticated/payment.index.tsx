@@ -51,6 +51,20 @@ function PaymentsList() {
         </div>
         <p className="text-muted-foreground mt-1">Settle pending deliveries and view past M-Pesa receipts.</p>
 
+        {rows !== null && rows.length === 0 && (
+          <section className="mt-8 card-surface p-8 text-center">
+            <h2 className="text-xl font-display font-bold text-navy">No deliveries yet</h2>
+            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+              You don't have any orders to pay for. Book a delivery or check pricing to get started.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <Link to="/book"><Button className="btn-emerald h-10">Book delivery</Button></Link>
+              <Link to="/pricing"><Button variant="outline" className="h-10">View pricing</Button></Link>
+              <a href="mailto:support@urbancourier.co.ke"><Button variant="ghost" className="h-10">Contact support</Button></a>
+            </div>
+          </section>
+        )}
+
         <section className="mt-8">
           <h2 className="text-lg font-display font-semibold mb-3">Pending payments</h2>
           {rows === null ? (

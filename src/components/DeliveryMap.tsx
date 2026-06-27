@@ -59,6 +59,23 @@ export function DeliveryMap({
   // Init map
   useEffect(() => {
     let cancelled = false;
+
+    // Add a global error handler for Google Maps API errors
+    const originalOnError = window.onerror;
+    window.onerror = function(message, source, lineno, colno, error) {
+      if (typeof message === 'string' && message.includes('Google Maps JavaScript API error')) {
+        console.error('Google Maps API error detected:', message);
+        if (!cancelled) {
+          setError(message);
+        }
+        return true;
+      }
+      if (originalOnError) {
+        return originalOnError(message, source, lineno, colno, error);
+      }
+      return false;
+    };
+
     loadGoogleMaps()
       .then((g) => {
         if (cancelled || !mapDivRef.current) return;
@@ -83,9 +100,14 @@ export function DeliveryMap({
         });
         setReady(true);
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => {
+        console.error('Error loading Google Maps:', err);
+        setError(err.message || "Failed to load Google Maps");
+      });
+
     return () => {
       cancelled = true;
+      window.onerror = originalOnError;
       if (idleListener.current) idleListener.current.remove();
     };
   }, []);
@@ -268,12 +290,35 @@ export function DeliveryMap({
     }
   }
 
+  if (error) {
+    return (
+      <div className={"relative flex flex-col items-center justify-center rounded-lg bg-muted p-8 text-center " + (className ?? "")}>
+        <div className="text-destructive mb-3">
+          <MapPin className="size-10 mx-auto opacity-50" />
+        </div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">Map unavailable</h3>
+        <p className="text-xs text-muted-foreground mb-4">{error}</p>
+        <div className="text-xs text-muted-foreground">
+          Please use the "Manual Entry" option in the booking form to continue!
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={"relative " + (className ?? "")}>
       <div ref={mapDivRef} className="absolute inset-0 rounded-lg overflow-hidden bg-muted" />
+      {!ready && !error && (
+        <div className="absolute inset-0 z-10 grid place-items-center bg-muted">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy mx-auto mb-2"></div>
+            <p className="text-xs text-muted-foreground">Loading map...</p>
+          </div>
+        </div>
+      )}
 
       {/* Top controls */}
-      {!readonly && (
+      {!readonly && ready && (
         <div className="absolute top-3 left-3 right-3 z-10 space-y-2">
           <div className="flex gap-2">
             <ModeBtn active={mode === "pickup"} onClick={() => setMode("pickup")}>
@@ -303,7 +348,7 @@ export function DeliveryMap({
       )}
 
       {/* Center crosshair (only while picking) */}
-      {!readonly && mode && (
+      {!readonly && ready && mode && (
         <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center">
           <div className="relative -translate-y-3">
             <MapPin
@@ -317,7 +362,7 @@ export function DeliveryMap({
       )}
 
       {/* Bottom confirm bar */}
-      {!readonly && mode && (
+      {!readonly && ready && mode && (
         <div className="absolute bottom-3 left-3 right-3 z-10 card-surface p-3 flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
@@ -338,13 +383,6 @@ export function DeliveryMap({
           >
             <Check className="size-4" /> Confirm
           </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="absolute bottom-3 left-3 right-3 z-20 rounded-md bg-destructive text-destructive-foreground text-xs px-3 py-2 flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="opacity-80 hover:opacity-100">Dismiss</button>
         </div>
       )}
     </div>

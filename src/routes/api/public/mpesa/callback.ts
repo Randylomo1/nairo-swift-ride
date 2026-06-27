@@ -32,27 +32,49 @@ export const Route = createFileRoute("/api/public/mpesa/callback")({
 
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+          const newPaymentStatus = (() => {
+            const rc = cb.ResultCode;
+            // Note: database enum typing in `src/integrations/supabase/types.ts` may lag behind migrations.
+            // We still write the correct terminal states expected by the app.
+            if (rc === 0) return "success" as any;
+            if (rc === 1032) return "cancelled" as any;
+            // Other non-zero result codes treated as failed by callback.
+            return "failed" as any;
+          })();
+
+
+
+
           const { data: payment } = await supabaseAdmin
             .from("payments")
             .update({
-              status: success ? "success" : "failed",
+              status: newPaymentStatus,
               mpesa_receipt: receipt ?? null,
               result_desc: cb.ResultDesc ?? null,
             })
             .eq("checkout_request_id", checkoutId)
-            .select("order_id")
+            // avoid downgrades: update only if existing status is non-terminal
+.in("status", ["pending"])
+            .select("order_id, status")
             .maybeSingle();
 
           if (payment?.order_id) {
             await supabaseAdmin
               .from("orders")
               .update({
-                payment_status: success ? "success" : "failed",
+                payment_status: newPaymentStatus,
                 mpesa_receipt: receipt ?? null,
-                status: success ? "paid" : "created",
+                status:
+                  newPaymentStatus === "success"
+                    ? "paid"
+                    : newPaymentStatus === "cancelled"
+                      ? "created"
+                      : "created",
               })
-              .eq("id", payment.order_id);
+              .eq("id", payment.order_id)
+.in("payment_status", ["pending"]);
           }
+
 
           return new Response(
             JSON.stringify({ ResultCode: 0, ResultDesc: "Accepted" }),

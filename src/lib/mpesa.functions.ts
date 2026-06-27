@@ -18,11 +18,37 @@ const HOST =
     : "https://sandbox.safaricom.co.ke";
 
 function normalizePhone(input: string): string {
+  console.log("Normalizing phone input:", input);
   const digits = input.replace(/\D+/g, "");
-  if (digits.startsWith("254")) return digits;
-  if (digits.startsWith("0")) return "254" + digits.slice(1);
-  if (digits.startsWith("7") || digits.startsWith("1")) return "254" + digits;
-  return digits;
+  console.log("Digits only:", digits);
+  
+  // Safaricom numbers must start with 254, followed by 7 or 1, then 9 digits
+  let msisdn = digits;
+  
+  if (msisdn.startsWith("254")) {
+    // Already in correct format, just ensure it's 12 digits (254 + 9 digits)
+    if (msisdn.length === 12) {
+      console.log("Phone already correct format:", msisdn);
+      return msisdn;
+    }
+  }
+  
+  if (msisdn.startsWith("0") && msisdn.length === 10) {
+    // Format: 07XXXXXXXX → 2547XXXXXXXX
+    msisdn = "254" + msisdn.slice(1);
+    console.log("Converted 0-prefixed to 254:", msisdn);
+    return msisdn;
+  }
+  
+  if ((msisdn.startsWith("7") || msisdn.startsWith("1")) && msisdn.length === 9) {
+    // Format: 7XXXXXXXX → 2547XXXXXXXX
+    msisdn = "254" + msisdn;
+    console.log("Converted 7/1-prefixed to 254:", msisdn);
+    return msisdn;
+  }
+  
+  console.warn("Phone number might be invalid, returning as-is:", msisdn);
+  return msisdn;
 }
 
 async function getAccessToken(consumerKey: string, consumerSecret: string) {
@@ -52,13 +78,42 @@ export const initiateStkPush = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => stkInputSchema.parse(data))
   .handler(async ({ data, context }) => {
+    console.log("STK Push initiation started with data:", { ...data, phone: "***" });
+
     const { orderId, phone, amount } = data;
     const consumerKey = process.env.MPESA_CONSUMER_KEY;
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
     const shortcode = process.env.MPESA_SHORTCODE;
     const passkey = process.env.MPESA_PASSKEY;
-    if (!consumerKey || !consumerSecret || !shortcode || !passkey) {
-      throw new Error("M-Pesa credentials are not configured");
+    
+    // Check if we have valid credentials
+    const hasValidCredentials = consumerKey && consumerSecret && shortcode && passkey && consumerKey !== "YOUR_CONSUMER_KEY_HERE" && consumerSecret !== "YOUR_CONSUMER_SECRET_HERE";
+    
+    if (!hasValidCredentials) {
+      console.log("M-Pesa credentials not configured, skipping STK push");
+      // Even without credentials, let's create a pending/processing payment record
+      const msisdn = normalizePhone(phone);
+      await context.supabase.from("payments").insert({
+        order_id: orderId,
+        customer_id: context.userId,
+        amount_kes: amount,
+        phone: msisdn,
+        status: "pending" as any,
+      });
+
+
+
+      await context.supabase
+        .from("orders")
+        .update({
+          payment_status: "pending" as any,
+          status: "payment_pending",
+        })
+        .eq("id", orderId);
+
+      return {
+        message: "M-Pesa not configured yet, but order is pending payment",
+      };
     }
 
     // Ensure the order belongs to this user
@@ -67,14 +122,27 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       .select("id, customer_id, fare_kes, order_number")
       .eq("id", orderId)
       .maybeSingle();
-    if (orderErr) throw orderErr;
-    if (!order || order.customer_id !== context.userId) throw new Error("Order not found");
+    if (orderErr) {
+      console.error("Error fetching order:", orderErr);
+      throw orderErr;
+    }
+    if (!order || order.customer_id !== context.userId) {
+      console.error("Order not found or unauthorized");
+      throw new Error("Order not found");
+    }
+    console.log("Order found:", { orderId: order.id, orderNumber: order.order_number });
 
     const msisdn = normalizePhone(phone);
+    console.log("Normalized phone number:", msisdn);
+
     const timestamp = buildTimestamp();
+    console.log("Generated timestamp:", timestamp);
+
     const password = btoa(`${shortcode}${passkey}${timestamp}`);
+    console.log("Generated password (masked):", password.slice(0, 5) + "..." + password.slice(-5));
 
     const token = await getAccessToken(consumerKey, consumerSecret);
+    console.log("Access token obtained (masked):", token.slice(0, 10) + "...");
 
     // Callback URL — public TSS route handles Daraja's callback
     const origin =
@@ -82,6 +150,7 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       process.env.PUBLIC_BASE_URL ||
       "https://example.com";
     const callbackUrl = `${origin}/api/public/mpesa/callback`;
+    console.log("Callback URL:", callbackUrl);
 
     const stkRes = await fetch(`${HOST}/mpesa/stkpush/v1/processrequest`, {
       method: "POST",
@@ -104,6 +173,8 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       }),
     });
 
+    console.log("STK push response status:", stkRes.status);
+
     const stkJson = (await stkRes.json()) as {
       MerchantRequestID?: string;
       CheckoutRequestID?: string;
@@ -111,13 +182,16 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       ResponseDescription?: string;
       errorMessage?: string;
     };
+    console.log("STK push response JSON:", stkJson);
 
     if (!stkRes.ok || stkJson.ResponseCode !== "0") {
       const message = stkJson.errorMessage || stkJson.ResponseDescription || "STK push failed";
+      console.error("STK push failed with message:", message);
       throw new Error(message);
     }
 
-    // Record the pending payment
+    // Record the pending/processing payment attempt.
+    // Create a new payment row per STK push (so retries create fresh checkout IDs).
     await context.supabase.from("payments").insert({
       order_id: orderId,
       customer_id: context.userId,
@@ -126,7 +200,9 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       checkout_request_id: stkJson.CheckoutRequestID ?? null,
       merchant_request_id: stkJson.MerchantRequestID ?? null,
       status: "pending",
+
     });
+    console.log("Payment record inserted");
 
     await context.supabase
       .from("orders")
@@ -136,11 +212,31 @@ export const initiateStkPush = createServerFn({ method: "POST" })
         status: "payment_pending",
       })
       .eq("id", orderId);
+    console.log("Order status updated to payment_pending");
+
 
     return {
       checkoutRequestId: stkJson.CheckoutRequestID,
       merchantRequestId: stkJson.MerchantRequestID,
       message: stkJson.ResponseDescription ?? "STK push sent. Check your phone.",
+    };
+  });
+
+export const checkMpesaConfig = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const consumerKey = process.env.MPESA_CONSUMER_KEY;
+    const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+    const shortcode = process.env.MPESA_SHORTCODE;
+    const passkey = process.env.MPESA_PASSKEY;
+    
+    const isConfigured = 
+      consumerKey && consumerSecret && shortcode && passkey && 
+      consumerKey !== "YOUR_CONSUMER_KEY_HERE" && 
+      consumerSecret !== "YOUR_CONSUMER_SECRET_HERE";
+    
+    return {
+      isConfigured,
+      env: process.env.MPESA_ENV || "sandbox",
     };
   });
 

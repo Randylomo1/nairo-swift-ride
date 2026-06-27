@@ -16,6 +16,9 @@ export const Route = createFileRoute("/_authenticated/payment/$orderId")({
   component: PaymentPage,
 });
 
+type PaymentStatus = "pending" | "processing" | "success" | "failed" | "cancelled" | "expired";
+type OrderStatus = "created" | "payment_pending" | "paid" | "rider_assigned" | "heading_to_pickup" | "picked_up" | "in_transit" | "out_for_delivery" | "delivered" | "cancelled";
+
 type Order = {
   id: string;
   order_number: string;
@@ -23,10 +26,11 @@ type Order = {
   dropoff_address: string;
   distance_km: number | null;
   fare_kes: number;
-  payment_status: string | null;
-  status: string;
+  payment_status: PaymentStatus | null;
+  status: OrderStatus;
   mpesa_receipt: string | null;
 };
+
 
 function PaymentPage() {
   const { orderId } = Route.useParams();
@@ -59,19 +63,26 @@ function PaymentPage() {
     if (!waiting) return;
     const t = setInterval(async () => {
       const res = await checkStatus({ data: { orderId } });
-      if (res && (res.payment_status === "success" || res.payment_status === "failed")) {
+      if (
+res &&
+        ((res.payment_status as any) === "success" ||
+          (res.payment_status as any) === "failed" ||
+          (res.payment_status as any) === "cancelled" ||
+          (res.payment_status as any) === "expired")
+      ) {
         setWaiting(false);
         setOrder((prev) => (prev ? { ...prev, ...res } as Order : prev));
         if (res.payment_status === "success") {
           toast.success("Payment successful");
           setTimeout(() => navigate({ to: "/track/$orderId", params: { orderId } }), 800);
         } else {
-          toast.error("Payment failed. Try again.");
+toast.error(`Payment ${res.payment_status as any}. You can retry.`);
         }
       }
     }, 3000);
     return () => clearInterval(t);
   }, [waiting, orderId, checkStatus, navigate]);
+
 
   async function pay() {
     if (!order) return;
@@ -120,6 +131,20 @@ function PaymentPage() {
                 <div className="mt-6 rounded-lg bg-emerald/10 p-4 text-emerald">
                   Payment successful. Redirecting to tracking…
                 </div>
+              ) : order.payment_status === "cancelled" || order.payment_status === "failed" || order.payment_status === "expired" ? (
+                <div className="mt-6 space-y-3">
+                  <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-4">
+                    <div className="font-semibold text-destructive">Payment {order.payment_status}</div>
+                    <div className="text-sm text-muted-foreground mt-1">You can retry the request.</div>
+                  </div>
+                  <Button
+                    onClick={pay}
+                    disabled={paying || waiting}
+                    className="btn-emerald w-full h-11"
+                  >
+                    {paying ? "Sending STK push…" : "Retry payment"}
+                  </Button>
+                </div>
               ) : (
                 <div className="mt-6 space-y-3">
                   <div>
@@ -130,10 +155,52 @@ function PaymentPage() {
                       placeholder="07XX XXX XXX"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      disabled={waiting || paying}
+disabled={waiting || paying}
                       className="mt-1"
                     />
                   </div>
+
+                  <div className="rounded-lg bg-warning/10 border border-warning/30 p-4">
+                    <div className="font-semibold text-navy">Waiting for M-Pesa Confirmation…</div>
+                    <div className="text-sm text-muted-foreground mt-1">If you cancel from your phone, this request will be marked accordingly.</div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        const res = await checkStatus({ data: { orderId } });
+                        if (!res) return;
+                        setOrder((prev) => (prev ? { ...prev, ...res } as Order : prev));
+                        if ((res.payment_status as any) === "success") {
+                          toast.success("Payment successful");
+                          setTimeout(
+                            () => navigate({ to: "/track/$orderId", params: { orderId } }),
+                            800
+                          );
+                        }
+                      }}
+
+                      disabled={paying || waiting}
+                    >
+                      Refresh Status
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        if (!confirm("Cancel this payment request?")) return;
+await supabase.from("payments").update({ status: "cancelled" as any }).eq("order_id", order.id);
+                        await supabase.from("orders").update({ payment_status: "cancelled" as any, status: "created" }).eq("id", order.id);
+                        setWaiting(false);
+setOrder((prev) => (prev ? { ...prev, payment_status: "cancelled" as any, status: "created" } as Order : prev));
+                        toast.success("Payment request cancelled");
+                      }}
+                      disabled={paying || waiting}
+                    >
+                      Cancel Request
+                    </Button>
+                  </div>
+
                   <Button
                     onClick={pay}
                     disabled={paying || waiting}
@@ -141,13 +208,9 @@ function PaymentPage() {
                   >
                     {waiting ? "Waiting for payment…" : paying ? "Sending STK push…" : "Pay with M-Pesa"}
                   </Button>
-                  {waiting && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      Check your phone and enter your M-Pesa PIN to confirm.
-                    </p>
-                  )}
                 </div>
               )}
+
             </>
           )}
         </div>

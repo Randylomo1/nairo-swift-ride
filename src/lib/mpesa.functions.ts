@@ -1,6 +1,7 @@
 // M-Pesa Daraja STK Push — TanStack server function
 // Ported from the Django MPESA_API repo to Cloudflare Worker runtime (fetch-based).
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -144,11 +145,17 @@ export const initiateStkPush = createServerFn({ method: "POST" })
     const token = await getAccessToken(consumerKey, consumerSecret);
     console.log("Access token obtained (masked):", token.slice(0, 10) + "...");
 
-    // Callback URL — public TSS route handles Daraja's callback
+    // Callback URL — derive from the incoming request so Safaricom hits the
+    // actual published/preview host (sandbox rejects example.com).
+    const forwardedHost = getRequestHeader("x-forwarded-host");
+    const host = forwardedHost || getRequestHeader("host");
+    const proto = getRequestHeader("x-forwarded-proto") || "https";
+    const derivedOrigin = host ? `${proto}://${host}` : null;
     const origin =
       process.env.LOVABLE_PUBLIC_URL ||
       process.env.PUBLIC_BASE_URL ||
-      "https://example.com";
+      derivedOrigin ||
+      "https://nairo-swift-ride.lovable.app";
     const callbackUrl = `${origin}/api/public/mpesa/callback`;
     console.log("Callback URL:", callbackUrl);
 

@@ -1,6 +1,6 @@
 // M-Pesa Daraja STK Push — TanStack server function
 // Ported from the Django MPESA_API repo to Cloudflare Worker runtime (fetch-based).
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, getRequest, getRequestHeader } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 

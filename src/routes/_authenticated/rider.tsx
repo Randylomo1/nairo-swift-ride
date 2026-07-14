@@ -170,7 +170,10 @@ function RiderPortal() {
                 <div key={o.id} className="card-surface p-5 flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-xs font-mono text-muted-foreground">{o.order_number}</div>
-                    <div className="font-semibold truncate">{o.pickup_address} → {o.dropoff_address}</div>
+                    <div className="font-semibold truncate">{o.pickup_area} → {o.dropoff_area}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {Number(o.distance_km).toFixed(1)} km · {o.package_category} · {Number(o.package_weight_kg).toFixed(1)} kg{o.fragile ? " · fragile" : ""}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-navy font-display font-bold">{formatKES(o.fare_kes)}</div>

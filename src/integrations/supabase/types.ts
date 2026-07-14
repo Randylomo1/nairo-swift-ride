@@ -400,7 +400,25 @@ export type Database = {
       }
     }
     Functions: {
+      accept_order: { Args: { _order_id: string }; Returns: boolean }
       claim_first_admin: { Args: never; Returns: boolean }
+      get_available_jobs: {
+        Args: never
+        Returns: {
+          created_at: string
+          distance_km: number
+          dropoff_area: string
+          eta_minutes: number
+          fare_kes: number
+          fragile: boolean
+          id: string
+          order_number: string
+          package_category: string
+          package_size: string
+          package_weight_kg: number
+          pickup_area: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

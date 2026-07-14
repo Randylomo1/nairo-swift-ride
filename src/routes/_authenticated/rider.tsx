@@ -14,17 +14,23 @@ export const Route = createFileRoute("/_authenticated/rider")({
   component: RiderPortal,
 });
 
-type Order = {
+type ActiveOrder = {
   id: string; order_number: string; status: string; rider_id: string | null;
   pickup_address: string; dropoff_address: string; fare_kes: number;
   pickup_lat: number; pickup_lng: number; dropoff_lat: number; dropoff_lng: number;
-  payment_status: string;
+  payment_status: string; recipient_name: string; recipient_phone: string;
+};
+
+type AvailableJob = {
+  id: string; order_number: string; pickup_area: string; dropoff_area: string;
+  distance_km: number; eta_minutes: number; fare_kes: number;
+  package_category: string; package_weight_kg: number; package_size: string; fragile: boolean;
 };
 
 function RiderPortal() {
   const [rider, setRider] = useState<{ approved: boolean; online: boolean } | null>(null);
-  const [available, setAvailable] = useState<Order[]>([]);
-  const [active, setActive] = useState<Order[]>([]);
+  const [available, setAvailable] = useState<AvailableJob[]>([]);
+  const [active, setActive] = useState<ActiveOrder[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
   async function load() {
@@ -33,16 +39,17 @@ function RiderPortal() {
     setUserId(u.user.id);
     const { data: r } = await supabase.from("riders").select("approved, online").eq("id", u.user.id).maybeSingle();
     setRider(r as any);
-    const { data: avail } = await supabase
-      .from("orders").select("*")
-      .is("rider_id", null).eq("payment_status", "success")
-      .order("created_at", { ascending: true }).limit(20);
-    setAvailable((avail ?? []) as Order[]);
+
+    // Sanitized job listing — no customer PII exposed until accepted.
+    const { data: avail, error: availErr } = await (supabase.rpc as any)("get_available_jobs");
+    if (availErr) console.error("get_available_jobs", availErr);
+    setAvailable((avail ?? []) as AvailableJob[]);
+
     const { data: mine } = await supabase
       .from("orders").select("*")
       .eq("rider_id", u.user.id).not("status", "in", "(delivered,cancelled)")
       .order("created_at", { ascending: false });
-    setActive((mine ?? []) as Order[]);
+    setActive((mine ?? []) as ActiveOrder[]);
   }
 
   useEffect(() => { load(); const i = setInterval(load, 10000); return () => clearInterval(i); }, []);
@@ -53,6 +60,7 @@ function RiderPortal() {
     if (error) return toast.error(error.message);
     setRider((r) => r ? { ...r, online: v } : r);
     if (v) shareLocation();
+    load();
   }
 
   function shareLocation() {
@@ -70,11 +78,10 @@ function RiderPortal() {
 
   async function accept(orderId: string) {
     if (!userId) return;
-    const { error } = await supabase.from("orders").update({
-      rider_id: userId, status: "rider_assigned",
-    }).eq("id", orderId).is("rider_id", null);
+    const { data, error } = await (supabase.rpc as any)("accept_order", { _order_id: orderId });
     if (error) return toast.error(error.message);
-    toast.success("Job accepted!");
+    if (data !== true) return toast.error("Job was just taken by another rider");
+    toast.success("Job accepted! Customer details unlocked.");
     load();
   }
 

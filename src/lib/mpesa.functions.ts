@@ -54,11 +54,25 @@ function normalizePhone(input: string): string {
 
 async function getAccessToken(consumerKey: string, consumerSecret: string) {
   const basic = btoa(`${consumerKey}:${consumerSecret}`);
-  const res = await fetch(`${HOST}/oauth/v1/generate?grant_type=client_credentials`, {
+  const url = `${HOST}/oauth/v1/generate?grant_type=client_credentials`;
+  console.log("[MPESA] OAuth token request →", url);
+  const res = await fetch(url, {
     headers: { Authorization: `Basic ${basic}` },
   });
-  if (!res.ok) throw new Error(`Daraja token failed: ${res.status}`);
-  const data = (await res.json()) as { access_token: string };
+  const text = await res.text();
+  console.log("[MPESA] OAuth response", res.status, text.slice(0, 400));
+  if (!res.ok) {
+    throw new Error(`Daraja OAuth failed [${res.status}]: ${text.slice(0, 300)}`);
+  }
+  let data: { access_token?: string };
+  try {
+    data = JSON.parse(text) as { access_token?: string };
+  } catch {
+    throw new Error(`Daraja OAuth returned non-JSON: ${text.slice(0, 300)}`);
+  }
+  if (!data.access_token) {
+    throw new Error(`Daraja OAuth missing access_token: ${text.slice(0, 300)}`);
+  }
   return data.access_token;
 }
 
@@ -180,21 +194,38 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       }),
     });
 
-    console.log("STK push response status:", stkRes.status);
+    const rawText = await stkRes.text();
+    console.log("[MPESA] STK push response status:", stkRes.status, "body:", rawText.slice(0, 800));
 
-    const stkJson = (await stkRes.json()) as {
+    let stkJson: {
       MerchantRequestID?: string;
       CheckoutRequestID?: string;
       ResponseCode?: string;
       ResponseDescription?: string;
+      errorCode?: string;
       errorMessage?: string;
-    };
-    console.log("STK push response JSON:", stkJson);
+      requestId?: string;
+    } = {};
+    try {
+      stkJson = JSON.parse(rawText);
+    } catch {
+      throw new Error(
+        `Daraja STK push returned non-JSON [${stkRes.status}]: ${rawText.slice(0, 300)}`
+      );
+    }
 
     if (!stkRes.ok || stkJson.ResponseCode !== "0") {
-      const message = stkJson.errorMessage || stkJson.ResponseDescription || "STK push failed";
-      console.error("STK push failed with message:", message);
-      throw new Error(message);
+      const parts = [
+        stkJson.errorMessage,
+        stkJson.errorCode ? `code=${stkJson.errorCode}` : null,
+        stkJson.ResponseDescription,
+        stkJson.requestId ? `requestId=${stkJson.requestId}` : null,
+      ].filter(Boolean);
+      const message = parts.length
+        ? parts.join(" | ")
+        : `STK push failed [${stkRes.status}]: ${rawText.slice(0, 200)}`;
+      console.error("[MPESA] STK push failed:", message);
+      throw new Error(`M-Pesa: ${message}`);
     }
 
     // Record the pending/processing payment attempt.

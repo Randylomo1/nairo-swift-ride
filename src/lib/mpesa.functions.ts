@@ -170,8 +170,11 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       process.env.PUBLIC_BASE_URL ||
       derivedOrigin ||
       "https://nairo-swift-ride.lovable.app";
-    const callbackUrl = `${origin}/api/public/mpesa/callback`;
-    console.log("Callback URL:", callbackUrl);
+    const callbackSecret = process.env.MPESA_CALLBACK_SECRET || "";
+    const callbackUrl = callbackSecret
+      ? `${origin}/api/public/mpesa/callback?token=${encodeURIComponent(callbackSecret)}`
+      : `${origin}/api/public/mpesa/callback`;
+    console.log("Callback URL (secret masked):", `${origin}/api/public/mpesa/callback`);
 
     const stkRes = await fetch(`${HOST}/mpesa/stkpush/v1/processrequest`, {
       method: "POST",

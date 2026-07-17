@@ -11,12 +11,29 @@ const stkInputSchema = z.object({
   amount: z.number().int().positive().max(150000),
 });
 
+// Safaricom's public sandbox test credentials.
+const SANDBOX_SHORTCODE = "174379";
+const SANDBOX_PASSKEY =
+  "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919";
+
+// Force sandbox mode unless BOTH production shortcode and passkey are provided
+// AND MPESA_ENV is explicitly "production".
+const prodShortcode = process.env.MPESA_SHORTCODE;
+const prodPasskey = process.env.MPESA_PASSKEY;
+const hasProdCreds = Boolean(prodShortcode && prodPasskey);
 const MPESA_ENV: "sandbox" | "production" =
-  (process.env.MPESA_ENV as "sandbox" | "production") || "sandbox";
+  process.env.MPESA_ENV === "production" && hasProdCreds
+    ? "production"
+    : "sandbox";
 const HOST =
   MPESA_ENV === "production"
     ? "https://api.safaricom.co.ke"
     : "https://sandbox.safaricom.co.ke";
+const EFFECTIVE_SHORTCODE =
+  MPESA_ENV === "production" ? (prodShortcode as string) : SANDBOX_SHORTCODE;
+const EFFECTIVE_PASSKEY =
+  MPESA_ENV === "production" ? (prodPasskey as string) : SANDBOX_PASSKEY;
+
 
 function normalizePhone(input: string): string {
   console.log("Normalizing phone input:", input);
@@ -98,11 +115,12 @@ export const initiateStkPush = createServerFn({ method: "POST" })
     const { orderId, phone, amount } = data;
     const consumerKey = process.env.MPESA_CONSUMER_KEY;
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-    const shortcode = process.env.MPESA_SHORTCODE;
-    const passkey = process.env.MPESA_PASSKEY;
-    
-    // Check if we have valid credentials
+    const shortcode = EFFECTIVE_SHORTCODE;
+    const passkey = EFFECTIVE_PASSKEY;
+
+    // Check if we have valid credentials (only consumer key/secret must be user-provided; shortcode/passkey fall back to sandbox test values)
     const hasValidCredentials = consumerKey && consumerSecret && shortcode && passkey && consumerKey !== "YOUR_CONSUMER_KEY_HERE" && consumerSecret !== "YOUR_CONSUMER_SECRET_HERE";
+
     
     if (!hasValidCredentials) {
       console.log("M-Pesa credentials not configured, skipping STK push");
@@ -267,19 +285,18 @@ export const checkMpesaConfig = createServerFn({ method: "GET" })
   .handler(async () => {
     const consumerKey = process.env.MPESA_CONSUMER_KEY;
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-    const shortcode = process.env.MPESA_SHORTCODE;
-    const passkey = process.env.MPESA_PASSKEY;
-    
-    const isConfigured = 
-      consumerKey && consumerSecret && shortcode && passkey && 
-      consumerKey !== "YOUR_CONSUMER_KEY_HERE" && 
+
+    const isConfigured =
+      Boolean(consumerKey) && Boolean(consumerSecret) &&
+      consumerKey !== "YOUR_CONSUMER_KEY_HERE" &&
       consumerSecret !== "YOUR_CONSUMER_SECRET_HERE";
-    
+
     return {
       isConfigured,
-      env: process.env.MPESA_ENV || "sandbox",
+      env: MPESA_ENV,
     };
   });
+
 
 export const checkPaymentStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

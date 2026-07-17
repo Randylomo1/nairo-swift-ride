@@ -115,11 +115,12 @@ export const initiateStkPush = createServerFn({ method: "POST" })
     const { orderId, phone, amount } = data;
     const consumerKey = process.env.MPESA_CONSUMER_KEY;
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-    const shortcode = process.env.MPESA_SHORTCODE;
-    const passkey = process.env.MPESA_PASSKEY;
-    
-    // Check if we have valid credentials
+    const shortcode = EFFECTIVE_SHORTCODE;
+    const passkey = EFFECTIVE_PASSKEY;
+
+    // Check if we have valid credentials (only consumer key/secret must be user-provided; shortcode/passkey fall back to sandbox test values)
     const hasValidCredentials = consumerKey && consumerSecret && shortcode && passkey && consumerKey !== "YOUR_CONSUMER_KEY_HERE" && consumerSecret !== "YOUR_CONSUMER_SECRET_HERE";
+
     
     if (!hasValidCredentials) {
       console.log("M-Pesa credentials not configured, skipping STK push");

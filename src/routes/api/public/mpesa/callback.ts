@@ -1,4 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { timingSafeEqual } from "node:crypto";
+
+function tokenOk(provided: string | null, expected: string): boolean {
+  if (!provided) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 // Safaricom Daraja calls this after the customer responds to the STK prompt.
 // Use service role to update payments + orders (RLS-bypass write).
@@ -7,6 +16,18 @@ export const Route = createFileRoute("/api/public/mpesa/callback")({
     handlers: {
       POST: async ({ request }) => {
         try {
+          const expected = process.env.MPESA_CALLBACK_SECRET;
+          if (!expected) {
+            console.error("MPESA_CALLBACK_SECRET not configured — refusing callback");
+            return new Response(JSON.stringify({ ResultCode: 1, ResultDesc: "Server misconfigured" }), { status: 500 });
+          }
+          const url = new URL(request.url);
+          const provided = url.searchParams.get("token") ?? request.headers.get("x-mpesa-token");
+          if (!tokenOk(provided, expected)) {
+            console.warn("M-Pesa callback rejected — invalid/missing token");
+            return new Response(JSON.stringify({ ResultCode: 1, ResultDesc: "Unauthorized" }), { status: 401 });
+          }
+
           const body = (await request.json()) as {
             Body?: {
               stkCallback?: {

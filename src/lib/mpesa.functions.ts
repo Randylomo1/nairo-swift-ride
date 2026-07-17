@@ -11,12 +11,29 @@ const stkInputSchema = z.object({
   amount: z.number().int().positive().max(150000),
 });
 
+// Safaricom's public sandbox test credentials.
+const SANDBOX_SHORTCODE = "174379";
+const SANDBOX_PASSKEY =
+  "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919";
+
+// Force sandbox mode unless BOTH production shortcode and passkey are provided
+// AND MPESA_ENV is explicitly "production".
+const prodShortcode = process.env.MPESA_SHORTCODE;
+const prodPasskey = process.env.MPESA_PASSKEY;
+const hasProdCreds = Boolean(prodShortcode && prodPasskey);
 const MPESA_ENV: "sandbox" | "production" =
-  (process.env.MPESA_ENV as "sandbox" | "production") || "sandbox";
+  process.env.MPESA_ENV === "production" && hasProdCreds
+    ? "production"
+    : "sandbox";
 const HOST =
   MPESA_ENV === "production"
     ? "https://api.safaricom.co.ke"
     : "https://sandbox.safaricom.co.ke";
+const EFFECTIVE_SHORTCODE =
+  MPESA_ENV === "production" ? (prodShortcode as string) : SANDBOX_SHORTCODE;
+const EFFECTIVE_PASSKEY =
+  MPESA_ENV === "production" ? (prodPasskey as string) : SANDBOX_PASSKEY;
+
 
 function normalizePhone(input: string): string {
   console.log("Normalizing phone input:", input);

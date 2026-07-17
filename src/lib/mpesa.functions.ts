@@ -285,19 +285,18 @@ export const checkMpesaConfig = createServerFn({ method: "GET" })
   .handler(async () => {
     const consumerKey = process.env.MPESA_CONSUMER_KEY;
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-    const shortcode = process.env.MPESA_SHORTCODE;
-    const passkey = process.env.MPESA_PASSKEY;
-    
-    const isConfigured = 
-      consumerKey && consumerSecret && shortcode && passkey && 
-      consumerKey !== "YOUR_CONSUMER_KEY_HERE" && 
+
+    const isConfigured =
+      Boolean(consumerKey) && Boolean(consumerSecret) &&
+      consumerKey !== "YOUR_CONSUMER_KEY_HERE" &&
       consumerSecret !== "YOUR_CONSUMER_SECRET_HERE";
-    
+
     return {
       isConfigured,
-      env: process.env.MPESA_ENV || "sandbox",
+      env: MPESA_ENV,
     };
   });
+
 
 export const checkPaymentStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

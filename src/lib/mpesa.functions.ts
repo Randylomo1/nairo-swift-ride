@@ -194,30 +194,17 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       : `${origin}/api/public/mpesa/callback`;
     console.log("Callback URL (secret masked):", `${origin}/api/public/mpesa/callback`);
 
-    const stkRes = await fetch(`${HOST}/mpesa/stkpush/v1/processrequest`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        BusinessShortCode: shortcode,
-        Password: password,
-        Timestamp: timestamp,
-        TransactionType: "CustomerPayBillOnline",
-        Amount: amount,
-        PartyA: msisdn,
-        PartyB: shortcode,
-        PhoneNumber: msisdn,
-        CallBackURL: callbackUrl,
-        AccountReference: order.order_number,
-        TransactionDesc: `Urban Courier ${order.order_number}`,
-      }),
-    });
-
-    const rawText = await stkRes.text();
-    console.log("[MPESA] STK push response status:", stkRes.status, "body:", rawText.slice(0, 800));
-
+    // Retry Safaricom transient errors (500.003.02 "System is busy",
+    // 500.001.1001 "Unable to lock subscriber", 429 rate limits) with backoff.
+    const TRANSIENT_CODES = new Set([
+      "500.003.02",
+      "500.001.1001",
+      "500.002.1001",
+      "404.001.03",
+    ]);
+    const MAX_ATTEMPTS = 4;
+    let stkRes!: Response;
+    let rawText = "";
     let stkJson: {
       MerchantRequestID?: string;
       CheckoutRequestID?: string;
@@ -227,27 +214,69 @@ export const initiateStkPush = createServerFn({ method: "POST" })
       errorMessage?: string;
       requestId?: string;
     } = {};
-    try {
-      stkJson = JSON.parse(rawText);
-    } catch {
-      throw new Error(
-        `Daraja STK push returned non-JSON [${stkRes.status}]: ${rawText.slice(0, 300)}`
-      );
-    }
+    let lastError = "";
 
-    if (!stkRes.ok || stkJson.ResponseCode !== "0") {
-      const parts = [
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      // Rebuild timestamp/password each attempt (timestamp must be fresh).
+      const ts = buildTimestamp();
+      const pwd = btoa(`${shortcode}${passkey}${ts}`);
+      stkRes = await fetch(`${HOST}/mpesa/stkpush/v1/processrequest`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          BusinessShortCode: shortcode,
+          Password: pwd,
+          Timestamp: ts,
+          TransactionType: "CustomerPayBillOnline",
+          Amount: amount,
+          PartyA: msisdn,
+          PartyB: shortcode,
+          PhoneNumber: msisdn,
+          CallBackURL: callbackUrl,
+          AccountReference: order.order_number,
+          TransactionDesc: `Urban Courier ${order.order_number}`,
+        }),
+      });
+      rawText = await stkRes.text();
+      console.log(`[MPESA] STK attempt ${attempt} status:`, stkRes.status, "body:", rawText.slice(0, 800));
+      try {
+        stkJson = JSON.parse(rawText);
+      } catch {
+        stkJson = {};
+      }
+
+      const ok = stkRes.ok && stkJson.ResponseCode === "0";
+      if (ok) break;
+
+      const transient =
+        stkRes.status === 429 ||
+        stkRes.status >= 500 ||
+        (stkJson.errorCode ? TRANSIENT_CODES.has(stkJson.errorCode) : false);
+
+      lastError = [
         stkJson.errorMessage,
         stkJson.errorCode ? `code=${stkJson.errorCode}` : null,
         stkJson.ResponseDescription,
         stkJson.requestId ? `requestId=${stkJson.requestId}` : null,
-      ].filter(Boolean);
-      const message = parts.length
-        ? parts.join(" | ")
-        : `STK push failed [${stkRes.status}]: ${rawText.slice(0, 200)}`;
-      console.error("[MPESA] STK push failed:", message);
-      throw new Error(`M-Pesa: ${message}`);
+      ].filter(Boolean).join(" | ") || `HTTP ${stkRes.status}: ${rawText.slice(0, 200)}`;
+
+      if (!transient || attempt === MAX_ATTEMPTS) {
+        console.error("[MPESA] STK push failed (final):", lastError);
+        throw new Error(
+          transient
+            ? `M-Pesa sandbox is overloaded right now (${lastError}). Please try again in a minute.`
+            : `M-Pesa: ${lastError}`
+        );
+      }
+
+      const backoffMs = 800 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 400);
+      console.warn(`[MPESA] Transient error, retrying in ${backoffMs}ms: ${lastError}`);
+      await new Promise((r) => setTimeout(r, backoffMs));
     }
+
 
     // Record the pending/processing payment attempt.
     // Create a new payment row per STK push (so retries create fresh checkout IDs).

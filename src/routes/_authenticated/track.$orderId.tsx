@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SiteHeader } from "@/components/SiteHeader";
+
 import { DeliveryMap } from "@/components/DeliveryMap";
 import { StatusPill } from "@/routes/_authenticated/dashboard";
 import { formatKES } from "@/lib/fare";
@@ -82,8 +82,8 @@ function TrackOrder() {
 
   if (!order) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <SiteHeader />
+      <div className="min-h-screen">
+        
         <main className="flex-1 grid place-items-center text-muted-foreground">Loading…</main>
       </div>
     );
@@ -94,8 +94,8 @@ function TrackOrder() {
   const dropoff = { lat: Number(order.dropoff_lat), lng: Number(order.dropoff_lng), address: order.dropoff_address };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+    <div className="min-h-screen">
+      
       <main className="flex-1 container-page py-8">
         <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" /> Back to dashboard

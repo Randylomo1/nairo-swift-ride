@@ -127,7 +127,7 @@ function OrdersPage() {
 
   async function onCancel(order: Order) {
     if (!confirm(`Cancel order ${order.order_number}?`)) return;
-    const { data, error } = await supabase.rpc("cancel_order", {
+    const { data, error } = await (supabase.rpc as any)("cancel_order", {
       _order_id: order.id,
       _reason: "Customer cancelled",
     });
@@ -139,7 +139,7 @@ function OrdersPage() {
   }
 
   async function onArchive(order: Order) {
-    const { data, error } = await supabase.rpc("archive_order", { _order_id: order.id });
+    const { data, error } = await (supabase.rpc as any)("archive_order", { _order_id: order.id });
     if (error) return toast.error(error.message);
     if (data === true) {
       toast.success("Order archived");

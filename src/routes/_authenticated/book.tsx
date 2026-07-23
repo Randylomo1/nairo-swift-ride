@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { SiteHeader } from "@/components/SiteHeader";
+
 import { DeliveryMap, type LocationPin } from "@/components/DeliveryMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,8 +229,8 @@ function BookDelivery() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+    <div className="min-h-screen">
+      
       <main className="flex-1 container-page py-8">
         <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6">
           {/* Map */}

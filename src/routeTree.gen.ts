@@ -14,7 +14,11 @@ import { Route as BecomeRiderRouteImport } from './routes/become-rider'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedRiderRouteImport } from './routes/_authenticated/rider'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBookRouteImport } from './routes/_authenticated/book'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -47,11 +51,32 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRiderRoute = AuthenticatedRiderRouteImport.update({
   id: '/rider',
   path: '/rider',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -99,7 +124,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/book': typeof AuthenticatedBookRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/orders': typeof AuthenticatedOrdersRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/rider': typeof AuthenticatedRiderRoute
+  '/support': typeof AuthenticatedSupportRoute
   '/payment/$orderId': typeof AuthenticatedPaymentOrderIdRoute
   '/track/$orderId': typeof AuthenticatedTrackOrderIdRoute
   '/payment/': typeof AuthenticatedPaymentIndexRoute
@@ -113,7 +142,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/book': typeof AuthenticatedBookRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/orders': typeof AuthenticatedOrdersRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/rider': typeof AuthenticatedRiderRoute
+  '/support': typeof AuthenticatedSupportRoute
   '/payment/$orderId': typeof AuthenticatedPaymentOrderIdRoute
   '/track/$orderId': typeof AuthenticatedTrackOrderIdRoute
   '/payment': typeof AuthenticatedPaymentIndexRoute
@@ -129,7 +162,11 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/book': typeof AuthenticatedBookRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/rider': typeof AuthenticatedRiderRoute
+  '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/payment/$orderId': typeof AuthenticatedPaymentOrderIdRoute
   '/_authenticated/track/$orderId': typeof AuthenticatedTrackOrderIdRoute
   '/_authenticated/payment/': typeof AuthenticatedPaymentIndexRoute
@@ -145,7 +182,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/book'
     | '/dashboard'
+    | '/notifications'
+    | '/orders'
+    | '/profile'
     | '/rider'
+    | '/support'
     | '/payment/$orderId'
     | '/track/$orderId'
     | '/payment/'
@@ -159,7 +200,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/book'
     | '/dashboard'
+    | '/notifications'
+    | '/orders'
+    | '/profile'
     | '/rider'
+    | '/support'
     | '/payment/$orderId'
     | '/track/$orderId'
     | '/payment'
@@ -174,7 +219,11 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/book'
     | '/_authenticated/dashboard'
+    | '/_authenticated/notifications'
+    | '/_authenticated/orders'
+    | '/_authenticated/profile'
     | '/_authenticated/rider'
+    | '/_authenticated/support'
     | '/_authenticated/payment/$orderId'
     | '/_authenticated/track/$orderId'
     | '/_authenticated/payment/'
@@ -227,11 +276,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/support': {
+      id: '/_authenticated/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof AuthenticatedSupportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rider': {
       id: '/_authenticated/rider'
       path: '/rider'
       fullPath: '/rider'
       preLoaderRoute: typeof AuthenticatedRiderRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/orders': {
+      id: '/_authenticated/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -290,7 +367,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedBookRoute: typeof AuthenticatedBookRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRiderRoute: typeof AuthenticatedRiderRoute
+  AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedPaymentOrderIdRoute: typeof AuthenticatedPaymentOrderIdRoute
   AuthenticatedTrackOrderIdRoute: typeof AuthenticatedTrackOrderIdRoute
   AuthenticatedPaymentIndexRoute: typeof AuthenticatedPaymentIndexRoute
@@ -300,7 +381,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedBookRoute: AuthenticatedBookRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRiderRoute: AuthenticatedRiderRoute,
+  AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedPaymentOrderIdRoute: AuthenticatedPaymentOrderIdRoute,
   AuthenticatedTrackOrderIdRoute: AuthenticatedTrackOrderIdRoute,
   AuthenticatedPaymentIndexRoute: AuthenticatedPaymentIndexRoute,

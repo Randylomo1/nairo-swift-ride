@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SiteHeader } from "@/components/SiteHeader";
+
 import { Button } from "@/components/ui/button";
 import { formatKES } from "@/lib/fare";
 import { toast } from "sonner";
@@ -192,8 +192,8 @@ function AdminPanel() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+    <div className="min-h-screen">
+      
       <main className="flex-1 container-page py-10">{children}</main>
     </div>
   );

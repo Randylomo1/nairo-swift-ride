@@ -82,6 +82,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          order_id: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_stops: {
         Row: {
           address: string
@@ -125,6 +158,10 @@ export type Database = {
       }
       orders: {
         Row: {
+          archived_by_customer: boolean
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           customer_id: string
           delivery_type: Database["public"]["Enums"]["delivery_type"]
@@ -157,6 +194,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_by_customer?: boolean
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           customer_id: string
           delivery_type?: Database["public"]["Enums"]["delivery_type"]
@@ -189,6 +230,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_by_customer?: boolean
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           customer_id?: string
           delivery_type?: Database["public"]["Enums"]["delivery_type"]
@@ -228,6 +273,7 @@ export type Database = {
           checkout_request_id: string | null
           created_at: string
           customer_id: string
+          expires_at: string
           id: string
           merchant_request_id: string | null
           mpesa_receipt: string | null
@@ -242,6 +288,7 @@ export type Database = {
           checkout_request_id?: string | null
           created_at?: string
           customer_id: string
+          expires_at?: string
           id?: string
           merchant_request_id?: string | null
           mpesa_receipt?: string | null
@@ -256,6 +303,7 @@ export type Database = {
           checkout_request_id?: string | null
           created_at?: string
           customer_id?: string
+          expires_at?: string
           id?: string
           merchant_request_id?: string | null
           mpesa_receipt?: string | null
@@ -311,6 +359,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rider_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          order_id: string
+          rating: number
+          rider_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          order_id: string
+          rating: number
+          rider_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          order_id?: string
+          rating?: number
+          rider_id?: string
+        }
+        Relationships: []
+      }
       riders: {
         Row: {
           approved: boolean
@@ -362,6 +440,39 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          order_id: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          order_id?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          order_id?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -385,6 +496,17 @@ export type Database = {
       }
     }
     Views: {
+      rider_public_stats: {
+        Row: {
+          avg_rating: number | null
+          completed_count: number | null
+          full_name: string | null
+          rating_count: number | null
+          rider_id: string | null
+          stored_rating: number | null
+        }
+        Relationships: []
+      }
       riders_public: {
         Row: {
           approved: boolean | null
@@ -401,7 +523,13 @@ export type Database = {
     }
     Functions: {
       accept_order: { Args: { _order_id: string }; Returns: boolean }
+      archive_order: { Args: { _order_id: string }; Returns: boolean }
+      cancel_order: {
+        Args: { _order_id: string; _reason?: string }
+        Returns: boolean
+      }
       claim_first_admin: { Args: never; Returns: boolean }
+      expire_stale_payments: { Args: never; Returns: number }
       get_available_jobs: {
         Args: never
         Returns: {
@@ -441,7 +569,7 @@ export type Database = {
         | "out_for_delivery"
         | "delivered"
         | "cancelled"
-      payment_status: "pending" | "success" | "failed"
+      payment_status: "pending" | "success" | "failed" | "expired" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -583,7 +711,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
-      payment_status: ["pending", "success", "failed"],
+      payment_status: ["pending", "success", "failed", "expired", "cancelled"],
     },
   },
 } as const

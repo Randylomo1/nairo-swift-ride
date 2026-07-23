@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SiteHeader } from "@/components/SiteHeader";
+
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatKES } from "@/lib/fare";
@@ -94,8 +94,8 @@ function RiderPortal() {
 
   if (rider && !rider.approved) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <SiteHeader />
+      <div className="min-h-screen">
+        
         <main className="flex-1 container-page py-16 text-center">
           <Bike className="size-12 mx-auto text-muted-foreground" />
           <h1 className="mt-4 text-2xl font-display font-bold text-navy">Pending approval</h1>
@@ -106,8 +106,8 @@ function RiderPortal() {
   }
   if (!rider) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <SiteHeader />
+      <div className="min-h-screen">
+        
         <main className="flex-1 container-page py-16 text-center">
           <h1 className="text-2xl font-display font-bold text-navy">You're not registered as a rider</h1>
           <p className="text-muted-foreground mt-2">Apply to start earning.</p>
@@ -118,8 +118,8 @@ function RiderPortal() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+    <div className="min-h-screen">
+      
       <main className="flex-1 container-page py-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-display font-bold text-navy">Rider portal</h1>

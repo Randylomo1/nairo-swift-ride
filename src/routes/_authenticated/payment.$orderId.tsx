@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { SiteHeader } from "@/components/SiteHeader";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,8 +106,8 @@ toast.error(`Payment ${res.payment_status as any}. You can retry.`);
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+    <div className="min-h-screen">
+      
       <main className="flex-1 container-page py-8">
         <div className="max-w-xl mx-auto card-surface p-6">
           <h1 className="text-2xl font-display font-bold text-navy">Pay for your delivery</h1>

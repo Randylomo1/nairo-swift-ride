@@ -70,7 +70,7 @@ function OrdersPage() {
     setLoading(true);
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return setLoading(false);
-    await supabase.rpc("expire_stale_payments").catch(() => null);
+    try { await (supabase.rpc as any)("expire_stale_payments"); } catch {}
     const { data } = await supabase
       .from("orders")
       .select(

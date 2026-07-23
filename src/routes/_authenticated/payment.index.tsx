@@ -41,7 +41,7 @@ function PaymentsList() {
   async function load() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return setRows([]);
-    await supabase.rpc("expire_stale_payments").catch(() => null);
+    try { await (supabase.rpc as any)("expire_stale_payments"); } catch {}
     const { data } = await supabase
       .from("orders")
       .select(

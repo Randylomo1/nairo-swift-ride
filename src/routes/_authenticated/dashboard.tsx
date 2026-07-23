@@ -66,7 +66,7 @@ function Dashboard() {
     if (roles.includes("rider")) return navigate({ to: "/rider" });
 
     // Best-effort auto-expire stale payments
-    await supabase.rpc("expire_stale_payments").catch(() => null);
+    try { await (supabase.rpc as any)("expire_stale_payments"); } catch {}
 
     const [p, o, n] = await Promise.all([
       supabase
